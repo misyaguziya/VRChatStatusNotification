@@ -23,7 +23,7 @@ VRChat Statusやその他のサービスから送信されるwebhookの情報を
 ## プロジェクト構成
 
 ```
-vrchat-webhook-tracker/
+VRChatStatusNotification/
 ├── src/
 │   ├── main.gs           # メインエントリーポイント（doPost関数、webhook受信・データ変換処理）
 │   └── spreadsheet.gs    # スプレッドシート管理・書式設定・統計機能

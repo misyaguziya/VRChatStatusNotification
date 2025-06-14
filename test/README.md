@@ -21,10 +21,10 @@ test/
 .\Test-VRChatWebhook.ps1 -WebhookUrl "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"
 
 # Discord形式のみテスト
-.\Test-VRChatWebhook.ps1 -WebhookUrl "YOUR_URL" -TestType discord
+.\Test-VRChatWebhook.ps1 -WebhookUrl "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" -TestType discord
 
 # 詳細ログ付きで実行
-.\Test-VRChatWebhook.ps1 -WebhookUrl "YOUR_URL" -Verbose
+.\Test-VRChatWebhook.ps1 -WebhookUrl "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" -Verbose
 ```
 
 ### 2. バッチファイルを使用
@@ -45,7 +45,7 @@ run_test.bat "YOUR_URL" discord
 
 - **3つのテスト形式**:
   - `discord`: Discord Embed形式
-  - `statuspage`: VRChat Status Page形式  
+  - `statuspage`: VRChat Status Page形式
   - `generic`: 汎用JSON形式
   - `all`: 上記すべて（デフォルト）
 
@@ -58,23 +58,23 @@ run_test.bat "YOUR_URL" discord
 
 | パラメータ | 必須 | デフォルト | 説明 |
 |-----------|------|------------|------|
-| `-WebhookUrl` | ✅ | - | テスト対象のWebhook URL |
-| `-TestType` | ❌ | `all` | テストの種類 |
-| `-DelaySeconds` | ❌ | `2` | テスト間の待機時間 |
-| `-Verbose` | ❌ | `false` | 詳細ログの出力 |
+| `-WebhookUrl` | ✓ | - | テスト対象のWebhook URL |
+| `-TestType` | ✗ | `all` | テストの種類 |
+| `-DelaySeconds` | ✗ | `2` | テスト間の待機時間 |
+| `-Verbose` | ✗ | `false` | 詳細ログの出力 |
 
 ### テストデータの内容
 
 #### 1. Discord Embed形式
+
 ```json
 {
   "embeds": [{
-    "title": "🚨 VRChat Service Alert - PowerShell Test",
+    "title": "VRChat Service Alert - PowerShell Test",
     "description": "We are experiencing elevated error rates...",
     "color": 16711680,
-    "fields": [
-      {
-        "name": "📊 Status",
+    "fields": [      {
+        "name": "Status",
         "value": "Investigating",
         "inline": true
       }
@@ -86,6 +86,7 @@ run_test.bat "YOUR_URL" discord
 ```
 
 #### 2. VRChat Status Page形式
+
 ```json
 {
   "page": {
@@ -101,6 +102,7 @@ run_test.bat "YOUR_URL" discord
 ```
 
 #### 3. 汎用形式
+
 ```json
 {
   "title": "VRChat PowerShell Integration Test",
@@ -119,6 +121,7 @@ run_test.bat "YOUR_URL" discord
 高度な設定を行う場合は、設定ファイルを作成できます：
 
 ### 1. 設定ファイルの作成
+
 ```powershell
 # テンプレートをコピー
 Copy-Item config.template.ps1 config.ps1
@@ -128,6 +131,7 @@ notepad config.ps1
 ```
 
 ### 2. 設定ファイルの使用
+
 ```powershell
 # 設定を読み込んでテスト実行
 . .\config.ps1
@@ -135,6 +139,7 @@ notepad config.ps1
 ```
 
 ### 3. 設定の検証
+
 ```powershell
 # 設定ファイルの読み込みと検証
 . .\config.ps1
@@ -145,36 +150,38 @@ Show-Configuration
 ## 結果の解釈
 
 ### 成功例
-```
-🚀 Starting VRChat Webhook Tests...
-🔗 Target URL: https://script.google.com/macros/s/ABC123/exec
 
-📋 Test 1/3: discord
-📤 Sending Discord Embed test...
-   ✅ Success (1250ms)
-   📝 Response: {"status":"success","message":"Data logged successfully"}
+```powershell
+[START] Starting VRChat Webhook Tests...
+Target URL: https://script.google.com/macros/s/ABC123/exec
 
-📊 Test Results Summary
+[TEST] Test 1/3: discord
+[SEND] Sending Discord Embed test...
+   [SUCCESS] Success (1250ms)
+   [RESPONSE] Response: {"status":"success","message":"Data logged successfully"}
+
+Test Results Summary
 ==================================================
-Discord Embed       : ✅ PASS
-Status Page         : ✅ PASS  
-Generic Format      : ✅ PASS
+Discord Embed       : [PASS]
+Status Page         : [PASS]
+Generic Format      : [PASS]
 
-📈 Total Results:
-   ✅ Successful: 3
-   ❌ Failed: 0
-   📊 Success Rate: 100.0%
+Total Results:
+   [SUCCESS] Successful: 3
+   [FAILED] Failed: 0
+   Success Rate: 100.0%
 
-🎉 All tests passed successfully!
+[COMPLETE] All tests passed successfully!
 ```
 
 ### エラー例
-```
-📋 Test 1/3: discord
-📤 Sending Discord Embed test...
-   ❌ Failed: The remote server returned an error: (404) Not Found
-   📊 Status Code: 404
-   📝 Response: {"error":"Script not found"}
+
+```powershell
+[TEST] Test 1/3: discord
+[SEND] Sending Discord Embed test...
+   [FAILED] Failed: The remote server returned an error: (404) Not Found
+   Status Code: 404
+   [RESPONSE] Response: {"error":"Script not found"}
 ```
 
 ## トラブルシューティング
@@ -182,6 +189,7 @@ Generic Format      : ✅ PASS
 ### よくある問題
 
 #### 1. 実行ポリシーエラー
+
 ```powershell
 # 実行ポリシーを一時的に変更
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
@@ -191,6 +199,7 @@ powershell -ExecutionPolicy Bypass -File Test-VRChatWebhook.ps1 -WebhookUrl "YOU
 ```
 
 #### 2. SSL/TLS エラー
+
 ```powershell
 # TLS 1.2 を有効化
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -199,6 +208,7 @@ powershell -ExecutionPolicy Bypass -File Test-VRChatWebhook.ps1 -WebhookUrl "YOU
 ```
 
 #### 3. プロキシ環境での実行
+
 ```powershell
 # プロキシ設定（config.ps1で設定）
 $script:ADVANCED_CONFIG = @{
@@ -208,6 +218,7 @@ $script:ADVANCED_CONFIG = @{
 ```
 
 #### 4. タイムアウトエラー
+
 ```powershell
 # タイムアウト時間を延長
 .\Test-VRChatWebhook.ps1 -WebhookUrl "YOUR_URL" -DelaySeconds 5
@@ -224,12 +235,14 @@ $script:ADVANCED_CONFIG = @{
 ## 高度な使用例
 
 ### 1. カスタムテストデータ
+
 ```powershell
 # スクリプトを修正してカスタムペイロードを追加
 # GetDiscordPayload(), GetStatusPagePayload(), GetGenericPayload() メソッドを編集
 ```
 
 ### 2. バッチ処理
+
 ```powershell
 # 複数のURLを順次テスト
 $urls = @(
@@ -244,6 +257,7 @@ foreach ($url in $urls) {
 ```
 
 ### 3. スケジュール実行
+
 ```powershell
 # Windows タスクスケジューラでの定期実行
 # schtasks コマンドまたは PowerShell ScheduledTasks モジュールを使用
@@ -252,6 +266,7 @@ foreach ($url in $urls) {
 ## ログとレポート
 
 ### 詳細レポートの生成
+
 ```powershell
 # -Verbose オプションで詳細レポートを生成
 .\Test-VRChatWebhook.ps1 -WebhookUrl "YOUR_URL" -Verbose
@@ -260,6 +275,7 @@ foreach ($url in $urls) {
 ```
 
 ### ログレベルの設定
+
 ```powershell
 # デバッグログの有効化
 $DebugPreference = "Continue"

@@ -46,19 +46,32 @@ param(
     [int]$DelaySeconds = 2
 )
 
+# 文字エンコーディングの設定
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 # 色付きログ出力用関数
 function Write-ColorLog {
     param(
         [string]$Message,
         [ConsoleColor]$Color = [ConsoleColor]::White,
-        [string]$Prefix = ""
+        [string]$Prefix = "",
+        [switch]$NoNewline
     )
     
     if ($Prefix) {
         Write-Host "$Prefix " -ForegroundColor $Color -NoNewline
-        Write-Host $Message
+        if ($NoNewline) {
+            Write-Host $Message -NoNewline
+        } else {
+            Write-Host $Message
+        }
     } else {
-        Write-Host $Message -ForegroundColor $Color
+        if ($NoNewline) {
+            Write-Host $Message -ForegroundColor $Color -NoNewline
+        } else {
+            Write-Host $Message -ForegroundColor $Color
+        }
     }
 }
 
@@ -277,7 +290,7 @@ class VRChatWebhookTester {
     [TestResult] SendWebhook([hashtable]$payload, [string]$testName) {
         $result = [TestResult]::new($testName)
           try {
-            Write-ColorLog "📤 Sending $testName test..." -Color Cyan
+            Write-ColorLog "[SEND] Sending $testName test..." -Color Cyan
             
             # ペイロードサイズを計算
             $payloadJson = $payload | ConvertTo-Json -Depth 10 -Compress
@@ -300,9 +313,8 @@ class VRChatWebhookTester {
             $result.Success = $true
             $result.StatusCode = 200  # Invoke-RestMethod は成功時のみ到達
             $result.Response = ($response | ConvertTo-Json -Depth 3 -Compress)
-            
-            Write-ColorLog "   ✅ Success ($elapsedMs ms)" -Color Green
-            Write-ColorLog "   📝 Response: $($result.Response)" -Color White
+              Write-ColorLog "   [SUCCESS] Success ($elapsedMs ms)" -Color Green
+            Write-ColorLog "   [RESPONSE] Response: $($result.Response)" -Color White
             
             # メトリクスを更新（汎用形式の場合）
             if ($testName -eq "Generic Format" -and $payload.ContainsKey("metrics")) {
@@ -330,13 +342,12 @@ class VRChatWebhookTester {
                     }
                 }
             }
-            
-            Write-ColorLog "   ❌ Failed: $($result.ErrorMessage)" -Color Red
+              Write-ColorLog "   [FAILED] Failed: $($result.ErrorMessage)" -Color Red
             if ($result.StatusCode -gt 0) {
-                Write-ColorLog "   📊 Status Code: $($result.StatusCode)" -Color Yellow
+                Write-ColorLog "   [STATUS] Status Code: $($result.StatusCode)" -Color Yellow
             }
             if ($result.Response) {
-                Write-ColorLog "   📝 Response: $($result.Response)" -Color White
+                Write-ColorLog "   [RESPONSE] Response: $($result.Response)" -Color White
             }
         }
         
@@ -375,21 +386,21 @@ class VRChatWebhookTester {
     [void] RunAllTests() {
         $tests = @("discord", "statuspage", "generic")
         
-        Write-ColorLog "🚀 Starting VRChat Webhook Tests..." -Color Magenta
-        Write-ColorLog "🔗 Target URL: $($this.WebhookUrl)" -Color Yellow
-        Write-ColorLog "⏱️  Delay between tests: $($this.DelaySeconds) seconds" -Color Gray
+        Write-ColorLog "[START] Starting VRChat Webhook Tests..." -Color Magenta
+        Write-ColorLog "[URL] Target URL: $($this.WebhookUrl)" -Color Yellow
+        Write-ColorLog "[DELAY] Delay between tests: $($this.DelaySeconds) seconds" -Color Gray
         Write-Host ""
         
         for ($i = 0; $i -lt $tests.Count; $i++) {
             $testType = $tests[$i]
             
-            Write-ColorLog "📋 Test $($i + 1)/$($tests.Count): $testType" -Color Blue
+            Write-ColorLog "[TEST] Test $($i + 1)/$($tests.Count): $testType" -Color Blue
             
             try {
                 $this.RunSingleTest($testType)
             }
             catch {
-                Write-ColorLog "   💥 Test setup failed: $($_.Exception.Message)" -Color Red
+                Write-ColorLog "   [ERROR] Test setup failed: $($_.Exception.Message)" -Color Red
                 
                 $failedResult = [TestResult]::new($testType)
                 $failedResult.ErrorMessage = $_.Exception.Message
@@ -398,7 +409,7 @@ class VRChatWebhookTester {
             
             # 最後のテスト以外は待機
             if ($i -lt ($tests.Count - 1)) {
-                Write-ColorLog "   ⏳ Waiting $($this.DelaySeconds) seconds..." -Color Gray
+                Write-ColorLog "   [WAIT] Waiting $($this.DelaySeconds) seconds..." -Color Gray
                 Start-Sleep -Seconds $this.DelaySeconds
             }
             
@@ -408,14 +419,14 @@ class VRChatWebhookTester {
     
     # テスト結果のサマリーを表示
     [void] ShowSummary() {
-        Write-ColorLog "📊 Test Results Summary" -Color Magenta
+        Write-ColorLog "[SUMMARY] Test Results Summary" -Color Magenta
         Write-ColorLog ("=" * 50) -Color Gray
         
         $successful = 0
         $failed = 0
         
         foreach ($result in $this.Results) {
-            $status = if ($result.Success) { "✅ PASS" } else { "❌ FAIL" }
+            $status = if ($result.Success) { "[PASS]" } else { "[FAIL]" }
             $statusColor = if ($result.Success) { [ConsoleColor]::Green } else { [ConsoleColor]::Red }
             
             Write-ColorLog "$($result.TestName.PadRight(20)): " -Color White -NoNewline
@@ -431,16 +442,15 @@ class VRChatWebhookTester {
             }
         }
         
-        Write-Host ""
-        Write-ColorLog "📈 Total Results:" -Color Cyan
-        Write-ColorLog "   ✅ Successful: $successful" -Color Green
-        Write-ColorLog "   ❌ Failed: $failed" -Color Red
-        Write-ColorLog "   📊 Success Rate: $([Math]::Round(($successful / $this.Results.Count) * 100, 1))%" -Color Yellow
+        Write-Host ""        Write-ColorLog "[RESULTS] Total Results:" -Color Cyan
+        Write-ColorLog "   [SUCCESS] Successful: $successful" -Color Green
+        Write-ColorLog "   [FAILED] Failed: $failed" -Color Red
+        Write-ColorLog "   [RATE] Success Rate: $([Math]::Round(($successful / $this.Results.Count) * 100, 1))%" -Color Yellow
         
         if ($failed -eq 0) {
-            Write-ColorLog "🎉 All tests passed successfully!" -Color Green
+            Write-ColorLog "[COMPLETE] All tests passed successfully!" -Color Green
         } else {
-            Write-ColorLog "⚠️  Some tests failed. Please check the errors above." -Color Yellow
+            Write-ColorLog "[WARNING] Some tests failed. Please check the errors above." -Color Yellow
         }
     }
     
@@ -467,7 +477,7 @@ class VRChatWebhookTester {
         $reportJson = $reportData | ConvertTo-Json -Depth 10
         Set-Content -Path $outputPath -Value $reportJson -Encoding UTF8
         
-        Write-ColorLog "📄 Detailed report saved to: $outputPath" -Color Cyan
+        Write-ColorLog "[REPORT] Detailed report saved to: $outputPath" -Color Cyan
     }
 }
 
@@ -492,12 +502,12 @@ function Test-WebhookUrl {
 
 # メイン実行部分
 function Main {
-    Write-ColorLog "🔧 VRChat Webhook Tester v1.0" -Color Magenta
+    Write-ColorLog "[INFO] VRChat Webhook Tester v1.0" -Color Magenta
     Write-ColorLog "=" * 50 -Color Gray
     
     # URL検証
     if (-not (Test-WebhookUrl -Url $WebhookUrl)) {
-        Write-ColorLog "❌ Invalid webhook URL format: $WebhookUrl" -Color Red
+        Write-ColorLog "[ERROR] Invalid webhook URL format: $WebhookUrl" -Color Red
         Write-ColorLog "   Expected format: https://script.google.com/macros/s/SCRIPT_ID/exec" -Color Yellow
         exit 1
     }
@@ -509,8 +519,8 @@ function Main {
         if ($TestType -eq "all") {
             $tester.RunAllTests()
         } else {
-            Write-ColorLog "🚀 Running single test: $TestType" -Color Magenta
-            Write-ColorLog "🔗 Target URL: $WebhookUrl" -Color Yellow
+            Write-ColorLog "[START] Running single test: $TestType" -Color Magenta
+            Write-ColorLog "[URL] Target URL: $WebhookUrl" -Color Yellow
             Write-Host ""
             
             $tester.RunSingleTest($TestType)
@@ -533,18 +543,16 @@ function Main {
             exit 0
         }
     }
-    catch {
-        Write-ColorLog "💥 Unexpected error occurred: $($_.Exception.Message)" -Color Red
-        Write-ColorLog "📍 Stack trace:" -Color Yellow
+    catch {        Write-ColorLog "[ERROR] Unexpected error occurred: $($_.Exception.Message)" -Color Red
+        Write-ColorLog "[TRACE] Stack trace:" -Color Yellow
         Write-ColorLog $_.ScriptStackTrace -Color Gray
         exit 2
     }
 }
 
 # スクリプト情報表示関数
-function Show-Help {
-    Write-Host @"
-🔧 VRChat Webhook Tester v1.0
+function Show-Help {    Write-Host @"
+[INFO] VRChat Webhook Tester v1.0
 
 DESCRIPTION:
     Google Apps Script で作成した VRChat 障害通知 Webhook レシーバーの動作を検証します。

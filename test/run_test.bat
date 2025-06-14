@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 REM VRChat Webhook テスト実行用バッチファイル
@@ -55,8 +56,8 @@ if not exist "%~dp0Test-VRChatWebhook.ps1" (
 echo Starting PowerShell test script...
 echo.
 
-REM PowerShellスクリプト実行
-powershell -ExecutionPolicy Bypass -File "%~dp0Test-VRChatWebhook.ps1" -WebhookUrl "%WEBHOOK_URL%" -TestType "%TEST_TYPE%" -Verbose
+REM PowerShellスクリプト実行（UTF-8エンコーディング対応）
+powershell -ExecutionPolicy Bypass -Command "$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '%~dp0Test-VRChatWebhook.ps1' -WebhookUrl '%WEBHOOK_URL%' -TestType '%TEST_TYPE%' -Verbose"
 
 REM 結果コードの確認
 if errorlevel 2 (

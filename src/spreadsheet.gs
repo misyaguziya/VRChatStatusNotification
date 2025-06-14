@@ -27,11 +27,7 @@ function writeToSpreadsheet(data) {
     
     console.log(`Data written to spreadsheet at row ${lastRow}: ${data.title} (Type: ${data.type})`);
     
-    // オプション: Discord通知を送信
-    const enableNotification = PropertiesService.getScriptProperties().getProperty('ENABLE_DISCORD_NOTIFICATION');
-    if (enableNotification === 'true') {
-      sendDiscordNotification(data);
-    }
+    // Note: Discord通知はmain.gsで処理される
     
   } catch (error) {
     console.error('Error writing to spreadsheet:', error);

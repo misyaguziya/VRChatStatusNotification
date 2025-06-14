@@ -275,8 +275,44 @@ Webhook受信時のレスポンス：
 
 ### Discord通知が送信されない
 
-- `DISCORD_WEBHOOK_URL`が正しく設定されているか確認
-- `ENABLE_DISCORD_NOTIFICATION`が`true`に設定されているか確認
+**設定確認手順：**
+
+1. **Apps Scriptエディタで設定確認関数を実行**
+
+   ```javascript
+   // 関数一覧から「checkConfiguration」を選択して実行
+   checkConfiguration()
+   ```
+
+2. **必要な設定項目を確認**
+   - `DISCORD_WEBHOOK_URL`: DiscordのWebhook URL
+   - `ENABLE_DISCORD_NOTIFICATION`: `true`に設定
+
+3. **Discord通知のテスト実行**
+
+   ```javascript
+   // 関数一覧から「testDiscordNotification」を選択して実行
+   testDiscordNotification()
+   ```
+
+**よくある問題と解決方法：**
+
+- ❌ `ENABLE_DISCORD_NOTIFICATION`が設定されていない
+  - → スクリプトプロパティで`true`に設定
+- ❌ Discord Webhook URLが無効
+  - → Discordサーバー設定で新しいWebhookを作成
+- ❌ Apps ScriptのURLアクセス権限エラー
+  - → スクリプトの承認が必要（初回実行時）
+
+**デバッグのためのログ確認：**
+
+Apps Scriptエディタの「実行数」から以下のようなログメッセージを確認：
+
+```log
+Discord notification enabled: true/false
+Discord webhook URL found, preparing notification...
+Discord notification sent successfully
+```
 
 ### Webhookが受信されない
 

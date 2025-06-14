@@ -38,6 +38,22 @@ function doPost(e) {
     // スプレッドシートに書き込み
     writeToSpreadsheet(extractedData);
     
+    // Discord通知送信（設定が有効な場合）
+    try {
+      const enableNotification = PropertiesService.getScriptProperties().getProperty('ENABLE_DISCORD_NOTIFICATION');
+      console.log('Discord notification enabled:', enableNotification);
+      
+      if (enableNotification === 'true') {
+        console.log('Sending Discord notification...');
+        sendDiscordNotification(extractedData);
+      } else {
+        console.log('Discord notification is disabled');
+      }
+    } catch (notificationError) {
+      console.error('Error sending Discord notification:', notificationError);
+      // Discord通知エラーは処理を止めない
+    }
+    
     // 成功レスポンス
     const response = {
       status: 'success',
@@ -408,6 +424,8 @@ function sendDiscordNotification(incidentData) {
     return;
   }
   
+  console.log('Discord webhook URL found, preparing notification...');
+  
   const embed = {
     title: `📋 VRChat障害情報を記録しました`,
     description: `**${incidentData.title}**\n${incidentData.description}`,
@@ -422,6 +440,11 @@ function sendDiscordNotification(incidentData) {
       {
         name: 'タイムスタンプ',
         value: new Date(incidentData.timestamp).toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'}),
+        inline: true
+      },
+      {
+        name: 'データタイプ',
+        value: incidentData.type,
         inline: true
       }
     ]
@@ -455,6 +478,8 @@ function sendDiscordNotification(incidentData) {
     embeds: [embed]
   };
   
+  console.log('Sending Discord notification with payload:', JSON.stringify(payload, null, 2));
+  
   try {
     const response = UrlFetchApp.fetch(webhookUrl, {
       method: 'POST',
@@ -464,13 +489,111 @@ function sendDiscordNotification(incidentData) {
       payload: JSON.stringify(payload)
     });
     
-    if (response.getResponseCode() === 204) {
+    const responseCode = response.getResponseCode();
+    console.log('Discord API response code:', responseCode);
+    
+    if (responseCode === 204) {
       console.log('Discord notification sent successfully');
     } else {
-      console.warn('Discord notification response:', response.getResponseCode());
+      console.warn('Discord notification unexpected response:', responseCode);
+      console.warn('Response content:', response.getContentText());
     }
     
   } catch (error) {
     console.error('Error sending Discord notification:', error);
+    console.error('Webhook URL (masked):', webhookUrl.substring(0, 50) + '...');
+    throw error; // エラーを再スローして上位で処理
   }
+}
+
+/**
+ * Discord通知設定のテスト関数
+ * Apps Scriptエディタから手動実行してDiscord通知をテストできます
+ */
+function testDiscordNotification() {
+  console.log('=== Discord Notification Test ===');
+  
+  // 設定確認
+  const enableNotification = PropertiesService.getScriptProperties().getProperty('ENABLE_DISCORD_NOTIFICATION');
+  const webhookUrl = PropertiesService.getScriptProperties().getProperty('DISCORD_WEBHOOK_URL');
+  
+  console.log('ENABLE_DISCORD_NOTIFICATION:', enableNotification);
+  console.log('DISCORD_WEBHOOK_URL configured:', webhookUrl ? 'Yes' : 'No');
+  
+  if (enableNotification !== 'true') {
+    console.log('❌ Discord notification is disabled. Set ENABLE_DISCORD_NOTIFICATION to "true"');
+    return;
+  }
+  
+  if (!webhookUrl) {
+    console.log('❌ Discord webhook URL not configured. Set DISCORD_WEBHOOK_URL property');
+    return;
+  }
+  
+  // テスト用データ
+  const testData = {
+    id: 'test-' + Date.now(),
+    type: 'test',
+    source: 'Manual Test',
+    timestamp: new Date().toISOString(),
+    title: 'Discord通知テスト',
+    description: 'これはDiscord通知機能のテストメッセージです。',
+    severity: 'Info',
+    status: 'Testing',
+    url: 'https://example.com'
+  };
+  
+  try {
+    sendDiscordNotification(testData);
+    console.log('✅ Test notification sent successfully');
+  } catch (error) {
+    console.error('❌ Test notification failed:', error);
+  }
+}
+
+/**
+ * 現在の設定状況を確認する関数
+ */
+function checkConfiguration() {
+  console.log('=== Configuration Check ===');
+  
+  const properties = PropertiesService.getScriptProperties().getProperties();
+  
+  console.log('Configured properties:');
+  console.log('- SPREADSHEET_ID:', properties.SPREADSHEET_ID ? 'Configured' : 'Missing');
+  console.log('- DISCORD_WEBHOOK_URL:', properties.DISCORD_WEBHOOK_URL ? 'Configured' : 'Missing');
+  console.log('- ENABLE_DISCORD_NOTIFICATION:', properties.ENABLE_DISCORD_NOTIFICATION || 'Not set (default: false)');
+  
+  if (!properties.SPREADSHEET_ID) {
+    console.log('⚠️ SPREADSHEET_ID is required');
+  }
+  
+  if (!properties.DISCORD_WEBHOOK_URL) {
+    console.log('⚠️ DISCORD_WEBHOOK_URL is required for Discord notifications');
+  }
+  
+  if (properties.ENABLE_DISCORD_NOTIFICATION !== 'true') {
+    console.log('⚠️ Discord notifications are disabled. Set ENABLE_DISCORD_NOTIFICATION to "true" to enable');
+  }
+  
+  console.log('=== End Configuration Check ===');
+}
+
+/**
+ * インシデントの重要度に応じた色を取得
+ * @param {string} severity - 重要度
+ * @return {number} Discord用カラーコード
+ */
+function getIncidentColor(severity) {
+  const colorMap = {
+    'critical': 0xFF0000,  // 赤
+    'major': 0xFF6600,     // オレンジ
+    'minor': 0xFFCC00,     // 黄色
+    'maintenance': 0x0099FF, // 青
+    'info': 0x00FF00,      // 緑
+    'unknown': 0x808080,   // グレー
+    'testing': 0x9932CC    // 紫（テスト用）
+  };
+  
+  return colorMap[severity.toLowerCase()] || colorMap['unknown'];
 }
